@@ -154,6 +154,10 @@ MD5算法本身是分块的，其他很多类似的算法比如SHA-1也是的，
 
 ![](./images/5.png)
 
+UploadService 使用 RabbitMQ 传输文件在本机的信息（包括位置信息），然后将这个信息发布到 RabbitMQ 上，TranferService 这个微服务监听 RabbitMQ，然后取出其中的信息，将其传输到阿里云和Ceph上。有一个条件：UploadService 和 TransferService 必须在一台机器上，这样就不需要网络传输文件了。这里可以使用 kubernetes 标签的方式将这两个 Pod 部署在一台 Node 上。
+
+文件下载：查表，看文件的位置在 OSS，Ceph，还是临时存储上。如果在 Ceph 上，就从 Ceph 上下载，如果在 OSS 上，就生成了一个 OSS URL 来供下载，如果在临时存储上，那就直接下载就好。
+
 ## 异步逻辑
 
 ![](./images/6.png)
@@ -195,3 +199,5 @@ AMQP中增加了Exchange和Binging的角色。生产者把消息发布到Exchang
 ![](./images/9.png)
 
 <img title="" src="./images/10.png" alt="" width="842">
+
+## 总结】
