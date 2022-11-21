@@ -189,3 +189,9 @@ AMQP中增加了Exchange和Binging的角色。生产者把消息发布到Exchang
 网上查了很多资料有的说是五种，有的说是四种，看了一下官网一共有七种，这里只讲解常用的常见的五种模式
 
 官网 ：[RabbitMQ 官网](https://www.rabbitmq.com/getstarted.html)
+
+## 微服务化
+
+![](./images/9.png)
+
+<img title="" src="./images/10.png" alt="" width="842">

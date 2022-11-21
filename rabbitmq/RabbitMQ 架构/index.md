@@ -208,6 +208,84 @@ q, err := ch.QueueDeclare(
     failOnError(err, "Failed to register a consumer")
 ```
 
+### Topics
+
+#### Producer
+
+发送到 Topics 交换的消息不能有任意的 routing_key - 它必须是一个单词列表，由点分隔。词可以是任何东西，但通常它们指定与消息相关的一些特征。一些有效的路由键示例：“ stock.usd.nyse ”、“ nyse.vmw ”、“ quick.orange.rabbit ”。路由键中的单词可以有任意多个，最多不超过 255 个字节。
+
+绑定密钥也必须采用相同的形式。Topics 交换背后的逻辑 类似于 direct 交换——使用特定路由键发送的消息将被传递到与匹配绑定键绑定的所有队列。然而，绑定键有两个重要的特殊情况：
+
+- *(星号) 只能代替一个词。
+- #(hash) 可以替代零个或多个单词。
+
+![](./images/5.png)
+
+```go
+err = ch.ExchangeDeclare(
+        "logs_topic", // name
+        "topic",      // type
+        true,         // durable
+        false,        // auto-deleted
+        false,        // internal
+        false,        // no-wait
+        nil,          // arguments
+    )
+    failOnError(err, "Failed to declare an exchange")
+
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+
+    // body := bodyFrom(os.Args)
+    body := fmt.Sprintf("Topic: routing key: %s", routingKey)
+    err = ch.PublishWithContext(ctx,
+        "logs_topic", // exchange
+        routingKey,   // routing key
+        false,        // mandatory
+        false,        // immediate
+        amqp.Publishing{
+            ContentType: "text/plain",
+            Body:        []byte(body),
+        })
+    failOnError(err, "Failed to publish a message")
+```
+
+#### Consumer
+
+```go
+// 声明队列
+q, err := ch.QueueDeclare(
+        "",    // name
+        false, // durable
+        false, // delete when unused
+        true,  // exclusive
+        false, // no-wait
+        nil,   // arguments
+    )
+    failOnError(err, "Failed to declare a queue")
+
+    // 将队列绑定到Exchange，设置RoutingKey
+    err = ch.QueueBind(
+        q.Name,       // queue name
+        routingKey,   // routing key
+        "logs_topic", // exchange
+        false,
+        nil)
+    failOnError(err, "Failed to bind a queue")
+
+    // 接收消费信息
+    msgs, err := ch.Consume(
+        q.Name, // queue
+        "",     // consumer
+        true,   // auto ack
+        false,  // exclusive
+        false,  // no local
+        false,  // no wait
+        nil,    // args
+    )
+    failOnError(err, "Failed to register a consumer")
+```
+
 ## RabbitMQ 安装
 
 ### 使用 Docker Image
@@ -250,7 +328,5 @@ docker run -d --name my-rabbit --hostname=my-rabbit -e RABBITMQ_DEFAULT_USER=adm
 | Work Queues       | Done   |
 | Publish/Subscribe | Done   |
 | Routing           | Done   |
-| Topics            |        |
+| Topics            | Done   |
 | RPC               |        |
-
-
