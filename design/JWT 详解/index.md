@@ -90,181 +90,45 @@ HMACSHA256(
 
 ## JWT 令牌如何工作 ？
 
-### 生成 Token
+可以自定义 Token，比如使用 MD5 来进行加密。MD5 加密算法是不可逆的，也就是说不能通过加密后的值和密钥推断出加密前的值。想要比较密文是否有效，就需要将负载值重新使用密钥加密，得出新的密文，与之前的密文比较。如果相同就没有被修改，如果不同就被修改了。
+
+注意：token 中的负载是明文（base64）！
 
 ```go
-type MyClaims struct {
-   Username string `json:"username"`
-   jwt.StandardClaims
+// 用于增加载荷的, 加密实际载荷的
+const token_salt = "tokensalt"
+
+// 生成Token
+func GenerateToken(payload string) string {
+    // 前32位是使用MD5加密后的hash不可逆结果, 之后是有效载荷
+    // token = MD5(payload+tokensalt) + payload
+    tokenPrefix := MD5([]byte(payload + token_salt)) // token_salt就是用于增加有效载荷的, 用于被加密
+    return tokenPrefix + payload
 }
 
-// 定义过期时间
-const TokenExpireDuration = time.Hour * 2
-
-//定义secret（私钥）
-var MySecret = []byte("这是一段用于生成token的密钥")
-
-//生成jwt
-func GenToken(username string) (string, error) {
-    // 这是payload（负载）
-   c := MyClaims{
-      username,
-      jwt.StandardClaims{
-         // 这里设置过期时间，是这个中间件自带的功能，不是JWT的统一实现
-         ExpiresAt: time.Now().Add(TokenExpireDuration).Unix(),
-         Issuer:    "my-project",
-      },
-   }
-
-   //使用指定的签名方法创建签名对象
-   // 这里定义加密方法，也就是header中的alg为“HS256"
-   token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
-
-   //使用指定的secret签名并获得完成的编码后的字符串token
-   // 这里生成公钥，也就是签名secret
-   return token.SignedString(MySecret)
+// 判断Token是否有效, 并取出有效载荷
+func IsTokenValid(token string) (payload string, valid bool) {
+    if len(token) <= 32 { // 不可能小于等于32位
+        return "", false
+    }
+    payload = token[32:] // 取出token32位之后的有效载荷.
+    tokenPrefix := MD5([]byte(payload + token_salt))
+    if tokenPrefix == token[:32] {
+        return payload, true
+    } else {
+        return "", false
+    }
 }
 ```
 
-### 解析 Token
+## 怎么实现单设备登录？
 
-```go
-//解析JWT
-func ParseToken(tokenString string) (*MyClaims, error) {
-   //解析token
-   // 这里通过
-   token, err := jwt.ParseWithClaims(tokenString, &MyClaims{}, func(token *jwt.Token) (i interface{}, err error) {
-      return MySecret, nil
-   })
-   // 这里判断签名是否被修改
-   if err != nil {
-      return nil, err
-   }
-   // 这里判断负载中的 Token 是否过期了
-   if claims, ok := token.Claims.(*MyClaims); ok && token.Valid {
-      return claims, nil
-   }
-   return nil, errors.New("invalid token")
-}
-```
+负载 + 密钥 --> 唯一密文
 
-### 编写基于JWT认证的中间件
+密文 + 密钥 不能推出负载
 
-```go
-//基于JWT认证中间件
-func JWTAuthMiddleware() func(c *gin.Context) {
-   return func(c *gin.Context) {
-      authHeader := c.Request.Header.Get("Authorization")
-      if authHeader == "" {
-         c.JSON(http.StatusOK, gin.H{
-            "code": 2003,
-            "msg":  "请求头中的auth为空",
-         })
-         //阻止调用后续的函数
-         c.Abort()
-         return
-      }
-      parts := strings.SplitN(authHeader, " ", 2)
+通过 Redis 的 Set 来存放用户的token。负载中除了存放 userId，还存放 IP 或者是 设备信息。这样用户在换设备或者是换IP的时候拿到的 Token 中的密文和负载就不一样了。
 
-      if !(len(parts) == 2 && parts[0] == "Bearer") {
-         c.JSON(http.StatusOK, gin.H{
-            "code": 2004,
-            "msg":  "请求头中的auth格式错误",
-         })
-         //阻止调用后续的函数
-         c.Abort()
-         return
-      }
-      mc, err := ParseToken(parts[1])
-      if err != nil {
-         c.JSON(http.StatusOK, gin.H{
-            "code": 2005,
-            "msg":  "无效的token",
-         })
-         //阻止调用后续的函数
-         c.Abort()
-         return
-      }
-      //将当前请求的username信息保存到请求的上下文c上
-      c.Set("username", mc.Username)
-      //后续的处理函数可以通过c.Get("username")来获取请求的用户信息
-      c.Next()
-   }
-}
-```
+用户登录 --> 用户名密码验证成功 --> 拿到用户的 IP 或者是设备信息 --> 生成新的 Token，刷新 Redis 并返回 Token 给浏览器。
 
-### 注册一条获取 Token 的路由
-
-```go
-type UserInfo struct {
-   Username string `json:"username"`
-   Password string `json:"password"`
-}
-
-func authHandler(c *gin.Context) {
-   var user UserInfo
-   err := c.ShouldBind(&user)
-   if err != nil {
-      c.JSON(http.StatusOK, gin.H{
-         "code": 2001,
-         "msg":  "无效的参数",
-      })
-      return
-   }
-
-   if user.Username == "cyl" && user.Password == "123456" {
-      //生成token
-      tokenString, _ := GenToken(user.Username)
-      c.JSON(http.StatusOK, gin.H{
-         "code": 200,
-         "msg":  "success",
-         "data": gin.H{"token": tokenString},
-      })
-      return
-   }
-
-   c.JSON(http.StatusOK, gin.H{
-      "code": 2002,
-      "msg":  "鉴权失败",
-   })
-   return
-}
-```
-
-## 为什么后端要使用 Redis 存储 Token ？
-
-> 这里不需要鉴权，因为Token能存放在Redis中的前提就是这个Token就是Server生成的，而不是前端传递的。使用Redis存放Token有一个好处就是不用判断Token是否被修改，因为如果被修改了，那么ZSet一定没有对应的（Token，TimeStamp），就需要用密码登录了。
-
-ZSet（Token，TimeStamp）
-
-String: (UserID, Token)  作用：在使用密码登录的时候将旧的Token从ZSet中删除。
-
-### 用户登录时：
-
-* 传 Token 还是传 密码
-  
-  * 密码：生成新 Token，根据UserID找到（UserID， Token）中的旧Token，然后删除，将新的Token放入ZSet中，然后设置一个过期时间。更新（UserID，Token）中的Token为新Token。
-  
-  * Token： 如下。
-
-* ZSet 是否存在 Token 这个 Key
-  
-  * 存在：更新ZSet中的Token对应的过期时间戳。
-  
-  * 不存在：可能设备是旧设备或者Token过期，需要重新使用密码登录。
-
-### 用户鉴权时：
-
-* 传 Token
-
-* ZSet 中是否存在 Token 这个 Key
-  
-  * 存在：开始鉴权
-  
-  * 不存在：可能设备是旧设备或者Token过期，需要重新使用密码登录。
-
-### 定时任务
-
-用一个定时任务来清理掉ZSet中过期的Token。
-
-## 怎样实现单点登录？
+接口鉴权 --> Token 密文比对成功 --> 取出负载中的userId，比较 Redis 中的，相同则还是原设备，不同则换设备了，那么就指引用户重新登录。

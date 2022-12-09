@@ -81,5 +81,3 @@ func (x customSort) Swap(i, j int)      { x.p[i], x.p[j] = x.p[j], x.p[i] }
 ## 排序的时间复杂度
 
 Go 的 sort 包中所有的排序算法在最坏的情况下会做 n log n 次 比较，n 是被排序序列的长度，所以排序的时间复杂度是 O(n log n)。其大多数的函数都是用改良后的快速排序算法实现的。
-
-

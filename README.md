@@ -38,7 +38,7 @@
 
 * [互斥锁和自旋锁的区别](https://github.com/geraldkohn/notes/blob/master/go/%E5%85%B6%E4%BB%96/%E4%BA%92%E6%96%A5%E9%94%81%E5%92%8C%E8%87%AA%E6%97%8B%E9%94%81%E7%9A%84%E5%8C%BA%E5%88%AB.md)
 
-* [unintptr & unsafe.Pointer]
+* [unintptr & unsafe.Pointer](https://github.com/geraldkohn/notes/blob/master/go/%E5%85%B6%E4%BB%96/uintptr%20%26%20unsafe.Pointer.md)
 
 ## Ceph
 

@@ -41,10 +41,10 @@ dp[i] 是指在背包容量为 i 的时候，结果的值。这个模板是一�
 // value[i] 物品 i 的价值
 for i := 0 ;i < len(weight) ; i++ {
     // 背包容量从大到小遍历
-	for j:= bagWeight; j >= weight[i] ; j-- {
-		// 递推公式
-		dp[j] = max(dp[j], dp[j-weight[i]]+value[i])
-	}
+    for j:= bagWeight; j >= weight[i] ; j-- {
+        // 递推公式
+        dp[j] = max(dp[j], dp[j-weight[i]]+value[i])
+    }
 }
 ```
 
@@ -162,9 +162,3 @@ for i := 3; i <= n; i++ {    // 遍历物品
     }
 }
 ```
-
-
-
-
-
-

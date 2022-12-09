@@ -44,8 +44,6 @@ hash：subkey：UserID；value：token
 
 无所谓在线离线，项目没有这个需求。只要调用接口就在线，不调用接口的时候在线或者离线我不关系。
 
-![](D:\Image\2022-11-14-16-07-11-image.png)
-
 ## 秒传接口
 
 ### 具体实现：
@@ -200,4 +198,4 @@ AMQP中增加了Exchange和Binging的角色。生产者把消息发布到Exchang
 
 <img title="" src="./images/10.png" alt="" width="842">
 
-## 总结】
+## 总结

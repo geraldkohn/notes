@@ -6,7 +6,7 @@
 
 可以看出 rpc 协议是一个应用层协议，rpc 可以建立在 TCP 上，也可以建立在 HTTP 上。对于rpc来说，这都是一样的，只要把通讯的内容塞进不同的报文理好了。其实http是最常用的承载RPC的通信协议之一。而且我们可以在http 上传输xml和json这样的文本协议，也可以是protobuf和thrift这样的二进制协议。
 
-gRPC 用的就是 HTTP 2.0
+gRPC 用的就是 TCP
 
 ### gRPC 性能高
 
@@ -16,7 +16,7 @@ Protobuf是由Google开发的二进制格式，用于在不同服务之间序列
 
 2. 它比 json 快多少？
 
-快六倍，[参考链接](https://link.zhihu.com/?target=https%3A//auth0.com/blog/beating-json-performance-with-protobuf/)
+快六倍，[Beating JSON performance with Protobuf](https://auth0.com/blog/beating-json-performance-with-protobuf/)
 
 3. 为什么比 json 快？
 
