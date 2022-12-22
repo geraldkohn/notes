@@ -340,14 +340,14 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ngx-svc
-  
+
 spec:
   type: ClusterIP    # Service 只能在集群内部访问
   type: NodePort     # Service 可以在集群外部访问
 
   selector:          # 筛选器, 筛选出被 Service 管理的 Pod
     app: ngx-dep
-    
+
   ports:
   - port: 80         # 外部端口(容器外部, 集群中)
     targetPort: 80   # 内部端口(容器内部)
@@ -425,11 +425,11 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ngx-ing
-  
+
 spec:
 
   ingressClassName: ngx-ink # 指定 Ingress 所属的 Ingress Class
-  
+
   rules: # 路由规则
   - host: ngx.test # host 名字
     http:
@@ -651,8 +651,6 @@ spec:
   - port: 6379
     protocol: TCP
     targetPort: 6379
-
-
 ```
 
  当将 Service 对象应用于 StatefulSet 的时候, Pod 的域名是: "Pod名.Service名.名字空间.svc.cluster.local".

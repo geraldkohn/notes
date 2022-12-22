@@ -1,17 +1,15 @@
 # Sort
 
-## 排序 Int，Float，String切片
-
-* sort.Ints
-
-* sort.Floats
-
-* sort.Strings
+## 排序任意切片
 
 ```go
-s := []int{4,3,2,1}
-sort.Ints(s)
-fmt.Println(s)    // 输出[1,2,3,4]
+sort.Slice(arr, func (i, j int) bool {
+    return arr[i] < arr[j]
+})
+
+// [1,2,3,4,5] ints
+// [a,b,c,d,e] bytes
+// [自定义结构体切片排序]
 ```
 
 ## 排序任意数据结构
